@@ -4,6 +4,7 @@
 * Written by Coxxs & Thanks for the help of orzFly
 */
 #pragma once
+#include "work.h"
 
 #define CQAPIVER 9
 #define CQAPIVERTEXT "9"

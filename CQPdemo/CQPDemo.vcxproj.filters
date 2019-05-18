@@ -27,6 +27,9 @@
     <ClInclude Include="appmain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="work.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -38,8 +41,17 @@
     <ClCompile Include="appmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="work.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="CQP.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="..\..\app.json">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
