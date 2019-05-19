@@ -282,6 +282,7 @@ bool work::_gupCmd(msgFrom from)
 bool work::cmd(msgFrom from)
 {
 	if (authIds.find(from.fromQQ) == authIds.end() && from.fromQQ!=MINE_QQ) {
+		CQ_addLog(ac, CQLOG_DEBUG, "no rights", from.msg.c_str());
 		return false;
 	}
 	string respone;
@@ -295,7 +296,7 @@ bool work::cmd(msgFrom from)
 			string key = from.msg.substr(10, end - 10);
 			string content = from.msg.substr(end + 5);
 			vector<keyword>::iterator it;
-			for (it = words.begin(); it != words.end();)
+			for (it = words.begin(); it != words.end();it++)
 			{
 				if (it->key == key) {
 					respone = "此关键字已存在喵，内容为"+it->content+"，如果需要替换请先删除喵";
