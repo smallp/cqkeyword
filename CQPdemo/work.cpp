@@ -18,7 +18,7 @@ void work::init()
 {
 	_dir = CQ_getAppDirectory(ac);
 	loadConf();
-	_qq = CQ_getLoginQQ(ac);
+	_qq = to_string(CQ_getLoginQQ(ac));
 }
 
 void work::saveConf()
@@ -266,6 +266,7 @@ bool work::_gupCmd(msgFrom from)
 	}
 	else
 	{
+		CQ_addLog(ac, CQLOG_DEBUG, "???", from.msg.c_str());
 		respone = "喵？";
 	}
 	if (from.type == CQ_MSG_GUP) {
@@ -394,7 +395,7 @@ bool work::gupMsg(msgFrom from)
 	}
 
 	//验证通过，开始处理
-	if (from.msg.find("豆豆") == 0 || from.msg.find(_qq) != string::npos) {
+	if (from.msg.find("豆豆") != string::npos || from.msg.find(_qq) != string::npos) {
 		//at自己或者开始叫自己，识别成命令
 		_gupCmd(from);
 		return true;
