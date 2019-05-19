@@ -47,7 +47,7 @@ CQEVENT(int32_t, __eventStartup, 0)() {
 * 本函数调用完毕后，酷Q将很快关闭，请不要再通过线程等方式执行其他代码。
 */
 CQEVENT(int32_t, __eventExit, 0)() {
-
+	oWork.saveConf();
 	return 0;
 }
 
@@ -70,6 +70,7 @@ CQEVENT(int32_t, __eventEnable, 0)() {
 * 无论本应用是否被启用，酷Q关闭前本函数都*不会*被调用。
 */
 CQEVENT(int32_t, __eventDisable, 0)() {
+	oWork.saveConf();
 	return 0;
 }
 

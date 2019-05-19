@@ -108,8 +108,8 @@ void work::loadConf()
 			for (i = 0, size = obj.size(); i < size; i++)
 			{
 				keyword word;
-				word.content = obj[i]["content"].asString;
-				word.key = obj[i]["key"].asString;
+				word.content = obj[i]["content"].asString();
+				word.key = obj[i]["key"].asString();
 				words.push_back(word);
 			}
 		}
@@ -137,8 +137,8 @@ void work::loadConf()
 			for each (string member in members)
 			{
 				gupStatus group;
-				group.status = obj[member]["status"].asBool;
-				group.time = obj[member]["time"].asInt64;
+				group.status = obj[member]["status"].asBool();
+				group.time = obj[member]["time"].asInt64();
 				int64_t t = stoll(member);
 				groupIds[t]=group;
 			}
@@ -191,19 +191,19 @@ bool work::_gupCmd(string)
 
 bool work::cmd(msgFrom from)
 {
-	if (authIds.find(from.fromQQ) == authIds.end()) {
+	if (authIds.find(from.fromQQ) == authIds.end() && from.fromQQ!=MINE_QQ) {
 		return false;
 	}
 	string respone;
-	if (from.msg.find("添加关键字")) {
+	if (from.msg.find("添加关键字")!= string::npos) {
 		int end = from.msg.find(" 内容");
-		if (end < 0) {
+		if (end == string::npos) {
 			respone = "添加关键字 解析失败，请确认命令是否正确喵";
 		}
 		else
 		{
-			string key = from.msg.substr(5, end - 6);
-			string content = from.msg.substr(end + 3);
+			string key = from.msg.substr(10, end - 6);
+			string content = from.msg.substr(end + 5);
 			vector<keyword>::iterator it;
 			for (it = words.begin(); it != words.end();)
 			{
@@ -221,8 +221,8 @@ bool work::cmd(msgFrom from)
 			}
 		}
 	}
-	else if (from.msg.find("删除关键字")) {
-		string key= from.msg.substr(5);
+	else if (from.msg.find("删除关键字") != string::npos) {
+		string key= from.msg.substr(10);
 		bool isSucc = false;
 		vector<keyword>::iterator it;
 		for (it=words.begin(); it !=words.end();)
@@ -234,22 +234,38 @@ bool work::cmd(msgFrom from)
 			}
 		}
 		respone = isSucc ? "删除成功喵~" : "没有找到喵……";
-	}else if (from.msg.find("添加授权")) {
-		string key = from.msg.substr(4);
-		int64_t toAdd= stoll(key);
-		authIds.insert(toAdd);
-		respone = "添加授权成功喵~";
-	}
-	else if (from.msg.find("删除授权")) {
-		string key = from.msg.substr(4);
-		int64_t toAdd = stoll(key);
-		if (toAdd == MINE_QQ) {
-			respone = "你是个坏人喵！豆豆是不会抛弃主人的喵！";
-		}
-		else
+	}else if (from.msg.find("添加授权") != string::npos) {
+		string key = from.msg.substr(8);
+		try
 		{
-			int i = authIds.erase(toAdd);
-			respone = i > 0 ? "删除授权成功喵~" : "没有找到喵……";
+			int64_t toAdd = stoll(key);
+			authIds.insert(toAdd);
+			respone = "添加授权成功喵~";
+		}
+		catch (const std::exception&)
+		{
+			CQ_addLog(ac, CQLOG_ERROR,"添加授权失败", key.c_str());
+			respone = "添加授权失败喵，确认一下输入是否正确喵~";
+		}
+	}
+	else if (from.msg.find("删除授权") != string::npos) {
+		string key = from.msg.substr(8);
+		try
+		{
+			int64_t toAdd = stoll(key);
+			if (toAdd == MINE_QQ) {
+				respone = "你是个坏人喵！豆豆是不会抛弃主人的喵！";
+			}
+			else
+			{
+				int i = authIds.erase(toAdd);
+				respone = i > 0 ? "删除授权成功喵~" : "没有找到喵……";
+			}
+		}
+		catch (const std::exception&)
+		{
+			CQ_addLog(ac, CQLOG_ERROR, "删除授权失败", key.c_str());
+			respone = "删除授权失败喵，确认一下输入是否正确喵~";
 		}
 	}
 	if (respone.empty()) {
