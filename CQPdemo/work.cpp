@@ -2,6 +2,7 @@
 #include "work.h"
 #include <filesystem>
 #include <regex>
+#include <time.h>
 work::work()
 {
 	words = vector<keyword>();
@@ -17,6 +18,7 @@ void work::init()
 {
 	_dir = CQ_getAppDirectory(ac);
 	loadConf();
+	_qq = CQ_getLoginQQ(ac);
 }
 
 void work::saveConf()
@@ -100,8 +102,6 @@ void work::loadConf()
 	{
 		if (file.is_open())
 		{
-			string res;
-			file >> res;
 			Json::Value obj;
 			Json::Reader reader;
 			reader.parse(file,obj);
@@ -128,8 +128,6 @@ void work::loadConf()
 	{
 		if (file.is_open())
 		{
-			string res;
-			file >> res;
 			Json::Value obj;
 			Json::Reader reader;
 			reader.parse(file, obj);
@@ -154,8 +152,6 @@ void work::loadConf()
 	{
 		if (file.is_open())
 		{
-			string res;
-			file >> res;
 			Json::Value obj;
 			Json::Reader reader;
 			reader.parse(file, obj);
@@ -179,14 +175,107 @@ void work::checkDir()
 	}
 }
 
-bool work::_cmd(string)
+bool work::_gupMsg(msgFrom from)
 {
-	return false;
+	string respone;
+	if (from.msg.find("?") != string::npos || from.msg.find("？") != string::npos) {
+		//问号一般代表有正常事务，不作处理
+		return false;
+	}
+	for each (keyword item in words)
+	{
+		if (from.msg.find(item.key) != string::npos) {
+			respone = item.content;
+			break;
+		}
+	}
+	if (respone.empty()) return false;
+	if (from.type == CQ_MSG_GUP) {
+		CQ_sendGroupMsg(ac, from.fromGup, respone.c_str());
+	}
+	else
+	{
+		CQ_sendDiscussMsg(ac, from.fromGup, respone.c_str());
+	}
+	return true;
 }
 
-bool work::_gupCmd(string)
+bool work::_gupCmd(msgFrom from)
 {
-	return false;
+	string respone;
+	if (from.msg.find("介绍") != string::npos && from.msg.find("自己") != string::npos) {
+		respone = INTRO;
+	}
+	else if (from.msg.find("禁言") != string::npos) {
+		string toParse = from.msg.substr(from.msg.find("禁言")+4);
+		regex reg1("\\d+天");
+		smatch r1;
+		int day, hour, min;
+		regex_search(toParse, r1, reg1);
+		string target = r1.str();
+		if (target.empty()) {
+			day = 0;
+		}
+		else {
+			target = target.substr(0, target.length() - 2);
+			day = stoi(target);
+		}
+		reg1 = regex("\\d+小时");
+		regex_search(toParse, r1, reg1);
+		target = r1.str();
+		if (target.empty()) {
+			hour = 0;
+		}
+		else {
+			target = target.substr(0, target.length() - 4);
+			hour = stoi(target);
+		}
+		reg1 = regex("\\d+分");
+		regex_search(toParse, r1, reg1);
+		target = r1.str();
+		if (target.empty()) {
+			min = 0;
+		}
+		else {
+			target = target.substr(0, target.length() - 2);
+			min = stoi(target);
+		}
+		if ((day | hour | min) == 0) {
+			groupIds[from.fromGup].status = false;
+			respone = "哔——";
+		}
+		else
+		{
+			int t = time(NULL);
+			respone = "哔——(持续";
+			if (day > 0) {
+				respone.append(to_string(day)).append("天");
+				t += day * 86400;
+			}
+			if (hour > 0) {
+				respone.append(to_string(hour)).append("小时");
+				t += day * 3600;
+			}
+			if (min > 0) {
+				respone.append(to_string(min)).append("分钟");
+				t += day * 60;
+			}
+			respone.append(")");
+			groupIds[from.fromGup].time = t;
+		}
+	}
+	else
+	{
+		respone = "喵？";
+	}
+	if (from.type == CQ_MSG_GUP) {
+		CQ_sendGroupMsg(ac, from.fromGup, respone.c_str());
+	}
+	else
+	{
+		CQ_sendDiscussMsg(ac, from.fromGup, respone.c_str());
+	}
+	return true;
 }
 
 bool work::cmd(msgFrom from)
@@ -202,7 +291,7 @@ bool work::cmd(msgFrom from)
 		}
 		else
 		{
-			string key = from.msg.substr(10, end - 6);
+			string key = from.msg.substr(10, end - 10);
 			string content = from.msg.substr(end + 5);
 			vector<keyword>::iterator it;
 			for (it = words.begin(); it != words.end();)
@@ -280,5 +369,35 @@ bool work::cmd(msgFrom from)
 
 bool work::gupMsg(msgFrom from)
 {
-	return false;
+	gupStatus status;
+	if (from.msg.find("召唤豆豆") == 0 || from.msg.find("出来吧豆豆") == 0) {
+		status.status = true;
+		status.time = 0;
+		groupIds[from.fromGup]=status;
+		if (from.type == CQ_MSG_GUP) {
+			CQ_sendGroupMsg(ac, from.fromGup, "喵~");
+		}
+		else
+		{
+			CQ_sendDiscussMsg(ac, from.fromGup, "喵~");
+		}
+		return true;
+	}
+	//验证需要处理不
+	time_t now = time(NULL);
+	if (groupIds.find(from.fromGup) == groupIds.end()) {
+		return false;
+	}
+	status = groupIds[from.fromGup];
+	if (!status.status || status.time > now) {
+		return false;
+	}
+
+	//验证通过，开始处理
+	if (from.msg.find("豆豆") == 0 || from.msg.find(_qq) != string::npos) {
+		//at自己或者开始叫自己，识别成命令
+		_gupCmd(from);
+		return true;
+	}
+	return _gupMsg(from);
 }

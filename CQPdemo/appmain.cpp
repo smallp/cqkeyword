@@ -199,9 +199,11 @@ CQEVENT(int32_t, __eventRequest_AddGroup, 32)(int32_t subType, int32_t sendTime,
 */
 CQEVENT(int32_t, __save, 0)() {
 	oWork.saveConf();
+	MessageBoxA(NULL, "保存成功！", "", 0);
 	return 0;
 }
 CQEVENT(int32_t, __load, 0)() {
 	oWork.loadConf();
+	MessageBoxA(NULL, "加载成功！", "", 0);
 	return 0;
 }
