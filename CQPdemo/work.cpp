@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "work.h"
 #include <filesystem>
+#include <regex>
 work::work()
 {
 	words = vector<keyword>();
@@ -176,4 +177,92 @@ void work::checkDir()
 	if (!std::tr2::sys::exists(_dir)) {
 		std::tr2::sys::create_directories(_dir);
 	}
+}
+
+bool work::_cmd(string)
+{
+	return false;
+}
+
+bool work::_gupCmd(string)
+{
+	return false;
+}
+
+bool work::cmd(msgFrom from)
+{
+	if (authIds.find(from.fromQQ) == authIds.end()) {
+		return false;
+	}
+	string respone;
+	if (from.msg.find("添加关键字")) {
+		int end = from.msg.find(" 内容");
+		if (end < 0) {
+			respone = "添加关键字 解析失败，请确认命令是否正确喵";
+		}
+		else
+		{
+			string key = from.msg.substr(5, end - 6);
+			string content = from.msg.substr(end + 3);
+			vector<keyword>::iterator it;
+			for (it = words.begin(); it != words.end();)
+			{
+				if (it->key == key) {
+					respone = "此关键字已存在喵，内容为"+it->content+"，如果需要替换请先删除喵";
+					break;
+				}
+			}
+			if (respone.empty()) {
+				keyword w;
+				w.key = key;
+				w.content = content;
+				words.push_back(w);
+				respone.append("添加关键字 ").append(key).append(" 成功了喵");
+			}
+		}
+	}
+	else if (from.msg.find("删除关键字")) {
+		string key= from.msg.substr(5);
+		bool isSucc = false;
+		vector<keyword>::iterator it;
+		for (it=words.begin(); it !=words.end();)
+		{
+			if (it->key == key) {
+				it = words.erase(it);
+				isSucc = true;
+				break;
+			}
+		}
+		respone = isSucc ? "删除成功喵~" : "没有找到喵……";
+	}else if (from.msg.find("添加授权")) {
+		string key = from.msg.substr(4);
+		int64_t toAdd= stoll(key);
+		authIds.insert(toAdd);
+		respone = "添加授权成功喵~";
+	}
+	else if (from.msg.find("删除授权")) {
+		string key = from.msg.substr(4);
+		int64_t toAdd = stoll(key);
+		if (toAdd == MINE_QQ) {
+			respone = "你是个坏人喵！豆豆是不会抛弃主人的喵！";
+		}
+		else
+		{
+			int i = authIds.erase(toAdd);
+			respone = i > 0 ? "删除授权成功喵~" : "没有找到喵……";
+		}
+	}
+	if (respone.empty()) {
+		return false;
+	}
+	else
+	{
+		CQ_sendPrivateMsg(ac,from.fromQQ,respone.c_str());
+		return true;
+	}
+}
+
+bool work::gupMsg(msgFrom from)
+{
+	return false;
 }

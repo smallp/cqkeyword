@@ -82,8 +82,12 @@ CQEVENT(int32_t, __eventPrivateMsg, 24)(int32_t subType, int32_t msgId, int64_t 
 
 	//如果要回复消息，请调用酷Q方法发送，并且这里 return EVENT_BLOCK - 截断本条消息，不再继续处理  注意：应用优先级设置为"最高"(10000)时，不得使用本返回值
 	//如果不回复消息，交由之后的应用/过滤器处理，这里 return EVENT_IGNORE - 忽略本条消息
-	
-	return EVENT_BLOCK;
+	msgFrom from;
+	from.fromQQ = fromQQ;
+	from.type = CQ_MSG_USR;
+	from.msg = string(msg);
+	bool respone = oWork.cmd(from);
+	return respone ? EVENT_BLOCK : EVENT_IGNORE;
 }
 
 
@@ -91,8 +95,13 @@ CQEVENT(int32_t, __eventPrivateMsg, 24)(int32_t subType, int32_t msgId, int64_t 
 * Type=2 群消息
 */
 CQEVENT(int32_t, __eventGroupMsg, 36)(int32_t subType, int32_t msgId, int64_t fromGroup, int64_t fromQQ, const char *fromAnonymous, const char *msg, int32_t font) {
-
-	return EVENT_IGNORE; //关于返回值说明, 见“_eventPrivateMsg”函数
+	msgFrom from;
+	from.fromQQ = fromQQ;
+	from.fromGup = fromGroup;
+	from.type = CQ_MSG_GUP;
+	from.msg = string(msg);
+	bool respone = oWork.gupMsg(from);
+	return respone ? EVENT_BLOCK : EVENT_IGNORE;
 }
 
 
@@ -100,8 +109,13 @@ CQEVENT(int32_t, __eventGroupMsg, 36)(int32_t subType, int32_t msgId, int64_t fr
 * Type=4 讨论组消息
 */
 CQEVENT(int32_t, __eventDiscussMsg, 32)(int32_t subType, int32_t msgId, int64_t fromDiscuss, int64_t fromQQ, const char *msg, int32_t font) {
-
-	return EVENT_IGNORE; //关于返回值说明, 见“_eventPrivateMsg”函数
+	msgFrom from;
+	from.fromQQ = fromQQ;
+	from.fromGup = fromDiscuss;
+	from.type = CQ_MSG_DIS;
+	from.msg = string(msg);
+	bool respone = oWork.gupMsg(from);
+	return respone ? EVENT_BLOCK : EVENT_IGNORE;
 }
 
 
@@ -187,8 +201,6 @@ CQEVENT(int32_t, __save, 0)() {
 	return 0;
 }
 CQEVENT(int32_t, __load, 0)() {
-	const char * dir=CQ_getAppDirectory(oWork.ac);
-	LPCSTR lpc=dir;
-	MessageBoxA(NULL, lpc, "", 0);
+	oWork.loadConf();
 	return 0;
 }
