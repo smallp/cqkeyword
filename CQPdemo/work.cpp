@@ -316,7 +316,7 @@ bool work::cmd(msgFrom from)
 		string key= from.msg.substr(10);
 		bool isSucc = false;
 		vector<keyword>::iterator it;
-		for (it=words.begin(); it !=words.end();)
+		for (it=words.begin(); it !=words.end();it++)
 		{
 			if (it->key == key) {
 				it = words.erase(it);
